@@ -7,4 +7,5 @@ export const env = {
   JWT_SECRET: process.env.JWT_SECRET,
   ADMIN_SERVICE_URL: process.env.ADMIN_SERVICE_URL,
   INTERNAL_SERVICE_KEY: process.env.INTERNAL_SERVICE_KEY,
+  CLIENT_URL: process.env.CLIENT_URL,
 };

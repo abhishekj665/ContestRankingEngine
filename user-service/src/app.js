@@ -12,7 +12,7 @@ import { env } from "./config/env.js";
 
 const app = express();
 
-const allowedOrigins = [env.ADMIN_SERVICE_URL];
+const allowedOrigins = [env.ADMIN_SERVICE_URL, env.CLIENT_URL];
 
 app.use(
   cors({
