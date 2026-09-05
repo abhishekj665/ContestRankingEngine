@@ -1,0 +1,53 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum WinnerTier {
+  GRAND
+  CONSISTENCY_1
+  CONSISTENCY_2
+  TOP_PERFORMER
+  CATEGORY_1ST
+  CATEGORY_2ND
+}
+
+enum WinnerStatus {
+  PENDING_KYC
+  PASSED
+  FAILED
+  REMOVED
+}
+
+model Winner {
+  id           String       @id @default(cuid())
+  userId       String
+  tier         WinnerTier
+  category     String?
+  score        Float
+  status       WinnerStatus @default(PENDING_KYC)
+  rankingRunId String?
+  createdAt    DateTime     @default(now())
+  rankingRun   RankingRun?  @relation(fields: [rankingRunId], references: [id])
+
+  @@index([tier])
+  @@index([userId])
+  @@index([rankingRunId])
+}
+
+model RankingRun {
+  id       String   @id @default(cuid())
+  runAt    DateTime @default(now())
+  snapshot Json
+  winners  Winner[]
+}
+
+model Admin {
+  id           Int      @id @default(autoincrement())
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+}

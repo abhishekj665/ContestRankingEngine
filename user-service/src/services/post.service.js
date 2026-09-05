@@ -43,6 +43,13 @@ export const getAllPosts = async ({ category, page, limit }) => {
         status: 404,
       };
     }
+
+    const postIds = posts.map((post) => post._id);
+    await Post.updateMany(
+      { _id: { $in: postIds } },
+      { $inc: { viewCount: 1 } },
+    );
+
     return {
       success: true,
       data: posts,
@@ -58,9 +65,6 @@ export const likePost = async (postId, userId) => {
   try {
     const post = await Post.findById(postId);
 
-    console.log("Post found:", post ? "Yes" : "No");
-    console.log("User ID:", userId);
-
     if (!post) {
       return {
         success: false,
@@ -71,13 +75,20 @@ export const likePost = async (postId, userId) => {
     }
 
     const existingLike = await Like.findOne({ userId: userId, postId });
+
+    if (existingLike) {
+      return {
+        success: false,
+        data: null,
+        message: "Post already liked by this user",
+        status: 400,
+      };
+    }
     const like = await Like.create({ userId: userId, postId });
 
-    console.log("Existing like found:", existingLike ? "Yes" : "No");
     post.likeCount += 1;
     await post.save();
 
-    console.log("Like created:", like ? "Yes" : "No");
     return {
       success: true,
       data: like,
@@ -85,6 +96,15 @@ export const likePost = async (postId, userId) => {
       status: 201,
     };
   } catch (error) {
+    if (error.code === 11000) {
+      return {
+        success: false,
+        data: null,
+        message: "Post already liked by this user",
+        status: 400,
+      };
+    }
+
     throw new ExpressError(500, error.message || "Internal Server Error");
   }
 };
