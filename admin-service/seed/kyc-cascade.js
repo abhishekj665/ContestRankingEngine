@@ -1,6 +1,6 @@
 import { connectDb, disconnectDb } from "../src/config/db.js";
 import prisma from "../src/services/prisma.js";
-import { markFailed } from "../src/services/kyc.service.js";
+import { markFailed, requestKyc } from "../src/services/kyc.service.js";
 
 const runKycCascade = async () => {
   await connectDb();
@@ -32,8 +32,19 @@ const runKycCascade = async () => {
       throw new Error("Run POST /api/rankings/run before the KYC cascade demo.");
     }
 
+    await requestKyc(travelWinner.id);
     const firstFailure = await markFailed(travelWinner.id);
+
+    if (!firstFailure.data.replacementWinner) {
+      throw new Error("No first Travel replacement exists for the KYC cascade demo.");
+    }
+
+    await requestKyc(firstFailure.data.replacementWinner.id);
     const secondFailure = await markFailed(firstFailure.data.replacementWinner.id);
+
+    if (!secondFailure.data.replacementWinner) {
+      throw new Error("No second Travel replacement exists for the KYC cascade demo.");
+    }
 
     console.log("KYC cascade completed successfully.");
     console.log(`First failed user: ${firstFailure.data.failedWinner.userId}`);

@@ -29,7 +29,7 @@ export default function PostCard({ post }) {
     const result = await commentOnPost(post._id, commentText);
 
     if (result.success) {
-      setCommentCount(commentCount + 1);
+      setCommentCount((currentCount) => currentCount + 1);
       setCommentText("");
     } else {
       setMessage(result.message || "Could not add comment");

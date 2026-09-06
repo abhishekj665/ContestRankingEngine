@@ -3,6 +3,7 @@ import User from "../src/models/User.model.js";
 import Post from "../src/models/Post.model.js";
 import Like from "../src/models/Like.model.js";
 import Comment from "../src/models/Comment.model.js";
+import { CONTEST_CATEGORIES } from "../src/config/contest.config.js";
 
 const createUser = async (name, residency = "Chhattisgarh") => {
   const username = name.toLowerCase().split(" ").join("-");
@@ -25,6 +26,10 @@ const createPost = async (
   createdAt,
   caption,
 ) => {
+  if (!CONTEST_CATEGORIES.includes(category)) {
+    throw new Error(`Invalid contest category: ${category}`);
+  }
+
   return await Post.create({
     title: caption.slice(0, 100),
     media: "https://example.com/seed-post.jpg",
@@ -40,9 +45,15 @@ const createPost = async (
 };
 
 const getWeekDate = (weeksAgo, postNumber) => {
+  if (weeksAgo === 0) {
+    const date = new Date();
+    date.setMinutes(date.getMinutes() - postNumber);
+    return date;
+  }
+
   const date = new Date();
-  date.setDate(date.getDate() - weeksAgo * 7 - 1);
   date.setHours(12, postNumber, 0, 0);
+  date.setDate(date.getDate() - date.getDay() - weeksAgo * 7 + 1);
 
   return date;
 };
@@ -74,23 +85,41 @@ const seed = async () => {
 
     const now = new Date();
 
-    // Multi-category leader: Technology (900) is stronger than Education (700).
+    const demoUser = await User.create({
+      name: "John Demo",
+      username: "john123",
+      email: "john@gmail.com",
+      password: "John@123",
+      residency: "Chhattisgarh",
+    });
+    await createPost(
+      demoUser,
+      "Technology",
+      12,
+      2,
+      30,
+      now,
+      "John demo account post for login verification",
+    );
+
+    // Multi-category leader: not a global/top winner, so category allocation
+    // must retain Technology (390) and cascade Education (370) to Esha.
     const multiCategoryLeader = await createUser("Mira Multi Category Leader");
     await createPost(
       multiCategoryLeader,
       "Technology",
-      600,
-      80,
       300,
+      20,
+      150,
       now,
       "MULTI CATEGORY LEADER - strongest Technology post",
     );
     await createPost(
       multiCategoryLeader,
       "Education",
-      400,
-      60,
-      600,
+      300,
+      10,
+      200,
       new Date(now.getTime() - 60000),
       "MULTI CATEGORY LEADER - lower Education post",
     );
@@ -99,9 +128,9 @@ const seed = async () => {
     await createPost(
       educationSpecialist,
       "Education",
-      400,
-      50,
-      450,
+      280,
+      20,
+      100,
       now,
       "Education replacement after multi-category conflict",
     );
@@ -139,6 +168,22 @@ const seed = async () => {
       now,
       "INELIGIBLE USER - would lead Global without residency filtering",
     );
+
+    // Complete the fixed category set with eligible participants.
+    for (const category of ["Sports", "Entertainment", "Fashion"]) {
+      for (let position = 1; position <= 2; position += 1) {
+        const user = await createUser(`${category} Seed ${position}`);
+        await createPost(
+          user,
+          category,
+          100 - position * 10,
+          5,
+          20,
+          new Date(now.getTime() - position * 60000),
+          `${category} eligible seed candidate ${position}`,
+        );
+      }
+    }
 
     // Exhausted category: Lifestyle has only this one eligible participant.
     const lifestyleOnlyUser = await createUser("Lina Lifestyle Only");
@@ -201,6 +246,26 @@ const seed = async () => {
       "CONSISTENCY RUNNER",
     );
 
+    // Reserve candidates guarantee that each valid category still has enough
+    // distinct people after Grand, Consistency, and Top Performer winners are
+    // excluded. Lifestyle intentionally remains the sole exhausted category.
+    for (const category of CONTEST_CATEGORIES) {
+      if (category === "Lifestyle") continue;
+
+      for (let position = 1; position <= 3; position += 1) {
+        const user = await createUser(`${category} Reserve ${position}`);
+        await createPost(
+          user,
+          category,
+          10 - position,
+          1,
+          position,
+          new Date(now.getTime() - (position + 30) * 60000),
+          `${category} reserve candidate ${position}`,
+        );
+      }
+    }
+
     // Near miss: weeks 1-3 have three posts, but week 4 has only two.
     const nearMissConsistency = await createUser("Nina Near Miss Consistency");
     await createConsistencyPosts(
@@ -210,12 +275,13 @@ const seed = async () => {
     );
 
     console.log("Seed data created successfully.");
-    console.log("Mira Multi Category Leader: Technology 900, Education 700.");
+    console.log("Mira leads Technology and Education; Education cascades to Esha.");
     console.log("Tara and Tej tie at score 100; Tara wins on comment count.");
     console.log("Nina Near Miss Consistency has only two week-4 posts.");
     console.log("Outside State Star is ineligible because residency is Maharashtra.");
     console.log("Lifestyle has one eligible participant, so second place is unawarded.");
     console.log("Travel has four cascade candidates for the admin KYC demo.");
+    console.log("Every configured category has valid reserve candidates; only Lifestyle is intentionally exhausted.");
   } finally {
     await disconnectDb();
   }

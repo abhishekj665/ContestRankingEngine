@@ -39,7 +39,6 @@ export const loginUser = async (req, res, next) => {
 
 export const updateResidency = async (req, res, next) => {
   try {
-    console.log(req.user)
     const response = await userService.updateResidency(
       req.user,
       req.body.residency,

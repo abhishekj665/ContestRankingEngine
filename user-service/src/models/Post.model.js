@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import { CONTEST_CATEGORIES } from "../../../contest.config.mjs";
+import { CONTEST_CATEGORIES } from "../config/contest.config.js";
 
 const postSchema = new mongoose.Schema(
   {
@@ -53,6 +53,7 @@ const postSchema = new mongoose.Schema(
 
 postSchema.index({ category: 1, createdAt: -1 });
 postSchema.index({ author: 1, createdAt: -1 });
+postSchema.index({ createdAt: -1 });
 
 const Post = mongoose.model("Post", postSchema);
 

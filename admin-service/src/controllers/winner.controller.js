@@ -16,7 +16,24 @@ export const allocateWinner = async (req, res, next) => {
 
 export const getWinners = async (req, res, next) => {
   try {
+    let rankingRunId = req.query.rankingRunId;
+
+    // The dashboard represents one contest result at a time. Historical runs
+    // are retained for audit/cascade purposes, but are not mixed into it.
+    if (!rankingRunId) {
+      const latestRun = await prisma.rankingRun.findFirst({
+        orderBy: { runAt: "desc" },
+        select: { id: true },
+      });
+
+      if (!latestRun) {
+        return successResponse(res, [], "No ranking run exists yet", 200);
+      }
+      rankingRunId = latestRun.id;
+    }
+
     const where = {
+      rankingRunId,
       status: { notIn: ["FAILED", "REMOVED"] },
     };
 
@@ -26,7 +43,7 @@ export const getWinners = async (req, res, next) => {
 
     const winners = await prisma.winner.findMany({
       where,
-      orderBy: { createdAt: "desc" },
+      orderBy: [{ tier: "asc" }, { category: "asc" }, { score: "desc" }],
     });
     return successResponse(res, winners, "Winners fetched successfully", 200);
   } catch (error) {

@@ -2,31 +2,46 @@ import { createContext, useState } from "react";
 
 export const AuthContext = createContext(null);
 
-export function AuthProvider({ children }) {
-  const [token, setToken] = useState(localStorage.getItem("token"));
-  const [email, setEmail] = useState(localStorage.getItem("email"));
+const SESSION_KEY = "contestSession";
 
-  function loginUser(newToken, userEmail) {
-    localStorage.clear();
-    localStorage.setItem("token", newToken);
-    localStorage.setItem("email", userEmail);
-    setToken(newToken);
-    setEmail(userEmail);
+function readSession() {
+  try {
+    const session = JSON.parse(localStorage.getItem(SESSION_KEY));
+    if (session?.token && ["user", "admin"].includes(session.role)) return session;
+  } catch {
+    // Treat malformed browser storage as a signed-out session.
+  }
+  return null;
+}
+
+export function AuthProvider({ children }) {
+  const [session, setSession] = useState(readSession);
+
+  function login(newToken, role, email = "") {
+    const nextSession = { token: newToken, role, email };
+    // Remove the legacy keys so only the active role's token remains persisted.
+    localStorage.removeItem("token");
+    localStorage.removeItem("adminToken");
+    localStorage.removeItem("email");
+    localStorage.setItem(SESSION_KEY, JSON.stringify(nextSession));
+    setSession(nextSession);
   }
 
-  function logoutUser() {
+  function logout() {
+    localStorage.removeItem(SESSION_KEY);
     localStorage.removeItem("token");
+    localStorage.removeItem("adminToken");
     localStorage.removeItem("email");
-    setToken(null);
-    setEmail(null);
+    setSession(null);
   }
 
   const value = {
-    token,
-    email,
-    isLoggedIn: !!token,
-    loginUser,
-    logoutUser,
+    token: session?.token ?? null,
+    email: session?.email ?? "",
+    role: session?.role ?? null,
+    isLoggedIn: Boolean(session?.token),
+    login,
+    logout,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

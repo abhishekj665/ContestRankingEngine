@@ -24,9 +24,9 @@ export default function ResidencyForm() {
   return (
     <form
       onSubmit={handleSubmit}
-      className="bg-white border border-slate-200 rounded-md p-6 max-w-sm w-full"
+      className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-7 shadow-xl shadow-slate-200/60"
     >
-      <h2 className="text-lg font-semibold text-slate-800 mb-4">
+      <h2 className="mb-2 text-xl font-semibold text-slate-900">
         Your residency
       </h2>
 
@@ -43,7 +43,7 @@ export default function ResidencyForm() {
       <button
         type="submit"
         disabled={loading}
-        className="w-full bg-indigo-600 text-white rounded-md py-2 text-sm font-medium hover:bg-indigo-700 disabled:opacity-50"
+        className="w-full rounded-xl bg-indigo-600 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 disabled:opacity-50"
       >
         {loading ? "Saving..." : "Save"}
       </button>

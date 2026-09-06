@@ -6,7 +6,13 @@ const adminApi = axios.create({
 });
 
 adminApi.interceptors.request.use((config) => {
-  const token = localStorage.getItem("adminToken");
+  let session = null;
+  try {
+    session = JSON.parse(localStorage.getItem("contestSession") || "null");
+  } catch {
+    // A corrupt local value must not prevent public requests from working.
+  }
+  const token = session?.role === "admin" ? session.token : null;
 
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
@@ -35,14 +41,18 @@ export const runRanking = async () => {
   return await adminApi.post("/api/rankings/run");
 };
 
-export const getWinners = async (tier = "") => {
+export const getWinners = async (tier = "", rankingRunId = "") => {
   return await adminApi.get("/api/winners", {
-    params: tier ? { tier } : {},
+    params: { ...(tier ? { tier } : {}), ...(rankingRunId ? { rankingRunId } : {}) },
   });
 };
 
 export const markKycPassed = async (winnerId) => {
   return await adminApi.post(`/api/winners/${winnerId}/kyc/pass`);
+};
+
+export const requestKyc = async (winnerId) => {
+  return await adminApi.post(`/api/winners/${winnerId}/kyc/request`);
 };
 
 export const markKycFailed = async (winnerId) => {

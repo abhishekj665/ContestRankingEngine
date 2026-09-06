@@ -1,7 +1,7 @@
 import { comparePosts } from "./ranking.service.js";
 import prisma from "./prisma.js";
 import ExpressError from "../utils/ExpressError.util.js";
-import { CONTEST_CATEGORIES } from "../../../contest.config.mjs";
+import { CONTEST_CATEGORIES } from "../config/contest.config.js";
 
 const getCandidateScore = (candidate) => {
   if (candidate.bestPost) {
