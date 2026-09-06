@@ -18,8 +18,6 @@ export const getWinners = async (req, res, next) => {
   try {
     let rankingRunId = req.query.rankingRunId;
 
-    // The dashboard represents one contest result at a time. Historical runs
-    // are retained for audit/cascade purposes, but are not mixed into it.
     if (!rankingRunId) {
       const latestRun = await prisma.rankingRun.findFirst({
         orderBy: { runAt: "desc" },

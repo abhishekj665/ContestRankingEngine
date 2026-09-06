@@ -42,8 +42,6 @@ export const getAllPosts = async ({ category, page, limit }) => {
     const ids = posts.map((post) => post._id);
     if (ids.length) {
       await Post.updateMany({ _id: { $in: ids } }, { $inc: { viewCount: 1 } });
-      // Keep the response consistent with the stored count that was just
-      // incremented, rather than making the feed display a stale value.
       posts.forEach((post) => {
         post.viewCount += 1;
       });

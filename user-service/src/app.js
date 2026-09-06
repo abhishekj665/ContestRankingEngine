@@ -1,7 +1,6 @@
 import express from "express";
 import cors from "cors";
 
-// Import routes
 import { UserRoutes } from "./routes/user.route.js";
 import { PostRoutes } from "./routes/post.route.js";
 import { InternalRoutes } from "./routes/internal.route.js";

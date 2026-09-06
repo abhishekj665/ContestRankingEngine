@@ -140,8 +140,6 @@ export const markFailed = async (winnerId) => {
       });
       const excludedUserIds = new Set([winner.userId]);
 
-      // Failed users remain excluded forever in this run.  Without this, a
-      // second failed replacement could re-award the original failed winner.
       for (const runWinner of winnersInRun) {
         excludedUserIds.add(runWinner.userId);
       }
@@ -154,8 +152,6 @@ export const markFailed = async (winnerId) => {
       );
 
       if (!replacementCandidate) {
-        // An exhausted category/ranking has no valid backfill.  The failed
-        // winner remains removed and the prize is deliberately left vacant.
         return { failedWinner, replacementWinner: null };
       }
 
