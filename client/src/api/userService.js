@@ -2,7 +2,6 @@ import axios from "axios";
 
 const userApi = axios.create({
   baseURL: import.meta.env.VITE_USER_SERVICE_URL,
-  headers: { "Content-Type": "application/json" },
 });
 
 userApi.interceptors.request.use((config) => {
@@ -37,8 +36,9 @@ export const signup = async (name, username, email, password, residency) => {
   });
 };
 
-export const login = async (email, password) => {
-  return await userApi.post("/api/users/login", { email, password });
+export const login = async (identifier, password) => {
+  const field = identifier.includes("@") ? "email" : "username";
+  return await userApi.post("/api/users/login", { [field]: identifier, password });
 };
 
 export const updateResidency = async (residency) => {
@@ -52,7 +52,12 @@ export const getPosts = async (page = 1, limit = 10, category = "") => {
 };
 
 export const createPost = async (postData) => {
-  return await userApi.post("/api/posts", postData);
+  const formData = new FormData();
+  formData.append("title", postData.title);
+  if (postData.caption?.trim()) formData.append("caption", postData.caption);
+  formData.append("category", postData.category);
+  formData.append("media", postData.media);
+  return await userApi.post("/api/posts", formData);
 };
 
 export const likePost = async (postId) => {

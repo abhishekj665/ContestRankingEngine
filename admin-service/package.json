@@ -8,9 +8,9 @@
     "dev": "nodemon src/server.js",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
+    "db:deploy": "prisma migrate deploy",
     "seed:reset": "node seed/reset.js",
-    "seed:kyc-cascade": "node seed/kyc-cascade.js",
-    "seed:admin": "node seed/seed-admin.js"
+    "seed:kyc-cascade": "node seed/kyc-cascade.js"
   },
   "keywords": [],
   "author": "",

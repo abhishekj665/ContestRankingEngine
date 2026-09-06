@@ -26,6 +26,7 @@ const createPost = async (
   caption,
 ) => {
   return await Post.create({
+    title: caption.slice(0, 100),
     media: "https://example.com/seed-post.jpg",
     caption,
     category,

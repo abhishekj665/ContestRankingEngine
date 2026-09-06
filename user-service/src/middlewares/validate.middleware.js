@@ -12,6 +12,10 @@ export const validate =
       });
     }
 
-    req[property] = value;
+    if (property === "query") {
+      req.validatedQuery = value;
+    } else {
+      req[property] = value;
+    }
     next();
   };

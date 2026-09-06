@@ -43,6 +43,8 @@ model RankingRun {
   runAt    DateTime @default(now())
   snapshot Json
   winners  Winner[]
+
+  @@index([runAt])
 }
 
 model Admin {

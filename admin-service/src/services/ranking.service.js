@@ -1,18 +1,6 @@
 import ExpressError from "../utils/ExpressError.util.js";
 import prisma from "./prisma.js";
-
-const categories = [
-  "Technology",
-  "Education",
-  "Sports",
-  "Entertainment",
-  "Travel",
-  "Food",
-  "Fashion",
-  "Fitness",
-  "Business",
-  "Lifestyle",
-];
+import { CONTEST_CATEGORIES } from "../../../contest.config.mjs";
 
 export const comparePosts = (firstPost, secondPost) => {
   if (secondPost.score !== firstPost.score) {
@@ -62,7 +50,7 @@ export const buildCategoryRankings = (scoredPosts) => {
   const bestPostsByUserAndCategory = {};
   const categoryRankings = {};
 
-  for (const category of categories) {
+  for (const category of CONTEST_CATEGORIES) {
     categoryRankings[category] = [];
   }
 
@@ -86,7 +74,7 @@ export const buildCategoryRankings = (scoredPosts) => {
     });
   }
 
-  for (const category of categories) {
+  for (const category of CONTEST_CATEGORIES) {
     categoryRankings[category].sort((firstUser, secondUser) => {
       return comparePosts(firstUser.bestPost, secondUser.bestPost);
     });

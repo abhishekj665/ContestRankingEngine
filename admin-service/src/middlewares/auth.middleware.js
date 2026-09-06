@@ -1,5 +1,6 @@
 import jwt from "jsonwebtoken";
 import { env } from "../config/env.js";
+import prisma from "../services/prisma.js";
 
 export const auth = async (req, res, next) => {
   try {
@@ -17,7 +18,16 @@ export const auth = async (req, res, next) => {
 
     const token = authorizationParts[1];
     const decoded = jwt.verify(token, env.ADMIN_JWT_SECRET);
-    req.adminId = decoded.adminId;
+
+    const admin = await prisma.admin.findUnique({
+      where: { id: decoded.adminId },
+    });
+
+    if (!admin) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    req.adminId = admin.id;
     next();
   } catch (error) {
     return res.status(401).json({ message: "Unauthorized" });

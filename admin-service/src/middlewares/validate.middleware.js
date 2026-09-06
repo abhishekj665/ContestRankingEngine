@@ -1,17 +1,20 @@
+import { errorResponse } from "../utils/response.util.js";
+
 export const validate =
-  (schema, property = "body") =>
+  (schema, source = "body") =>
   (req, res, next) => {
-    const { error, value } = schema.validate(req[property], {
-      abortEarly: true,
-      stripUnknown: true,
-    });
+    const { error, value } = schema.validate(req[source]);
 
     if (error) {
-      return res.status(400).json({
-        message: error.details[0].message,
-      });
+      return errorResponse(res, error.message, 400);
     }
 
-    req[property] = value;
+    if (source === "query") {
+      Object.keys(req.query).forEach((key) => delete req.query[key]);
+      Object.assign(req.query, value);
+    } else {
+      req[source] = value;
+    }
+
     next();
   };

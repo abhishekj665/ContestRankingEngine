@@ -29,6 +29,7 @@ test(
         residency: "Chhattisgarh",
       });
       post = await Post.create({
+        title: "Integration test post",
         media: "https://example.com/test.jpg",
         category: "Technology",
         author: user._id,
@@ -45,6 +46,7 @@ test(
       });
 
       assert.equal(successfulLikes.length, 1);
+      assert.equal(results.find((result) => !result.success).status, 409);
       assert.equal(savedLikes, 1);
     } finally {
       if (post) {
