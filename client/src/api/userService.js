@@ -5,7 +5,13 @@ const userApi = axios.create({
 });
 
 userApi.interceptors.request.use((config) => {
-  const token = localStorage.getItem("token");
+  let session = null;
+  try {
+    session = JSON.parse(localStorage.getItem("contestSession") || "null");
+  } catch {
+    // A corrupt local value must not prevent public requests from working.
+  }
+  const token = session?.role === "user" ? session.token : null;
 
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;

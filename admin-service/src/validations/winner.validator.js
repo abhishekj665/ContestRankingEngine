@@ -1,5 +1,5 @@
 import Joi from "joi";
-import { CONTEST_CATEGORIES, WINNER_TIERS } from "../../../contest.config.mjs";
+import { CONTEST_CATEGORIES, WINNER_TIERS } from "../config/contest.config.js";
 
 export const winnerSchema = Joi.object({
   userId: Joi.string().required(),
@@ -10,6 +10,7 @@ export const winnerSchema = Joi.object({
 
 export const winnerQuerySchema = Joi.object({
   tier: Joi.string().valid(...WINNER_TIERS),
+  rankingRunId: Joi.string().min(1),
 });
 
 export const idParamSchema = Joi.object({

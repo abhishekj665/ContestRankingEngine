@@ -1,0 +1,1 @@
+ALTER TABLE "Winner" ADD COLUMN "kycRequestedAt" TIMESTAMP(3);

@@ -46,6 +46,8 @@ userSchema.methods.comparePassword = async function (password) {
   return await bcrypt.compare(password, this.password);
 };
 
+userSchema.index({ isContestEligible: 1 });
+
 const User = mongoose.model("User", userSchema);
 
 export default User;

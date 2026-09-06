@@ -40,8 +40,14 @@ export const getAllPosts = async ({ category, page, limit }) => {
       .skip((page - 1) * limit)
       .limit(limit);
     const ids = posts.map((post) => post._id);
-    if (ids.length)
+    if (ids.length) {
       await Post.updateMany({ _id: { $in: ids } }, { $inc: { viewCount: 1 } });
+      // Keep the response consistent with the stored count that was just
+      // incremented, rather than making the feed display a stale value.
+      posts.forEach((post) => {
+        post.viewCount += 1;
+      });
+    }
     return {
       success: true,
       data: posts,
@@ -61,13 +67,6 @@ export const likePost = async (postId, userId) => {
         data: null,
         message: "Post not found",
         status: 404,
-      };
-    if (await Like.exists({ userId, postId }))
-      return {
-        success: false,
-        data: null,
-        message: "Post already liked by this user",
-        status: 409,
       };
     const like = await Like.create({ userId, postId });
     await Post.updateOne({ _id: postId }, { $inc: { likeCount: 1 } });

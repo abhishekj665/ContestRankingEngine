@@ -88,6 +88,16 @@ test("category ranking keeps one best post per user in each category", () => {
   assert.equal(Object.keys(categoryRankings).length, 10);
 });
 
+test("category ranking ignores posts outside the configured contest categories", () => {
+  const categoryRankings = buildCategoryRankings([
+    ...scoredPosts,
+    { ...scoredPosts[0], postId: "legacy-post", category: "Unknown" },
+  ]);
+
+  assert.equal(categoryRankings.Technology.length, 2);
+  assert.equal(Object.keys(categoryRankings).length, 10);
+});
+
 test("consistency ranking requires three posts in every week", () => {
   const weeklyTopThreeData = [
     {
@@ -143,4 +153,25 @@ test("consistency ranking excludes a user missing one complete week", () => {
 
   assert.equal(consistencyRanking.length, 1);
   assert.equal(consistencyRanking[0].userId, "qualifying-user");
+});
+
+test("consistency ties use comments, views, then the earliest post timestamp", () => {
+  const createWeeks = (commentCount, viewCount, createdAt) =>
+    Array.from({ length: 4 }, () => ({
+      postCount: 3,
+      weekScore: 100,
+      topThreePosts: [{ commentCount, viewCount, createdAt }],
+    }));
+
+  const consistencyRanking = buildConsistencyRanking([
+    { userId: "later", weeks: createWeeks(5, 10, "2026-01-03") },
+    { userId: "more-views", weeks: createWeeks(5, 11, "2026-01-04") },
+    { userId: "more-comments", weeks: createWeeks(6, 1, "2026-01-05") },
+    { userId: "earlier", weeks: createWeeks(5, 10, "2026-01-01") },
+  ]);
+
+  assert.deepEqual(
+    consistencyRanking.map((candidate) => candidate.userId),
+    ["more-comments", "more-views", "earlier", "later"],
+  );
 });

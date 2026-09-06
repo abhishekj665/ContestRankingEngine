@@ -6,6 +6,7 @@ import { idParamSchema } from "../validations/winner.validator.js";
 
 const router = express.Router();
 
+router.post("/:id/kyc/request", auth, validate(idParamSchema, "params"), kycController.requestKyc);
 router.post("/:id/kyc/pass", auth, validate(idParamSchema, "params"), kycController.markPassed);
 router.post("/:id/kyc/fail", auth, validate(idParamSchema, "params"), kycController.markFailed);
 

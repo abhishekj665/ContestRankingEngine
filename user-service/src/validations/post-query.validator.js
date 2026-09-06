@@ -1,5 +1,5 @@
 import Joi from "joi";
-import { CONTEST_CATEGORIES } from "../../../contest.config.mjs";
+import { CONTEST_CATEGORIES } from "../config/contest.config.js";
 
 export const postQuerySchema = Joi.object({
   category: Joi.string().valid(...CONTEST_CATEGORIES),

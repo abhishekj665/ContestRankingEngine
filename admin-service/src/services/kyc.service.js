@@ -35,18 +35,54 @@ export const getReplacementCandidate = (winner, snapshot, excludedUserIds) => {
   return firstEligible(ranking, excludedUserIds);
 };
 
-export const markPassed = async (winnerId) => {
+export const requestKyc = async (winnerId) => {
   try {
-    const winner = await prisma.winner.findUnique({ where: { id: winnerId } });
+    const result = await prisma.winner.updateMany({
+      where: {
+        id: winnerId,
+        status: "PENDING_KYC",
+        kycRequestedAt: null,
+      },
+      data: { kycRequestedAt: new Date() },
+    });
 
-    if (!winner) {
-      throw new ExpressError(404, "Winner not found");
+    if (!result.count) {
+      const winner = await prisma.winner.findUnique({ where: { id: winnerId } });
+      if (!winner) throw new ExpressError(404, "Winner not found");
+      throw new ExpressError(409, "KYC was already requested or decided for this winner");
     }
 
-    const updatedWinner = await prisma.winner.update({
-      where: { id: winnerId },
+    const winner = await prisma.winner.findUnique({ where: { id: winnerId } });
+    return {
+      success: true,
+      status: 200,
+      data: winner,
+      message: "KYC request sent successfully",
+    };
+  } catch (error) {
+    if (error.statusCode) throw error;
+    throw new ExpressError(500, error.message || "Internal Server Error");
+  }
+};
+
+export const markPassed = async (winnerId) => {
+  try {
+    const result = await prisma.winner.updateMany({
+      where: {
+        id: winnerId,
+        status: "PENDING_KYC",
+        kycRequestedAt: { not: null },
+      },
       data: { status: "PASSED" },
     });
+
+    if (!result.count) {
+      const winner = await prisma.winner.findUnique({ where: { id: winnerId } });
+      if (!winner) throw new ExpressError(404, "Winner not found");
+      throw new ExpressError(409, "Send a KYC request before deciding this winner");
+    }
+
+    const updatedWinner = await prisma.winner.findUnique({ where: { id: winnerId } });
 
     return {
       success: true,
@@ -75,26 +111,39 @@ export const markFailed = async (winnerId) => {
         throw new ExpressError(404, "Winner not found");
       }
 
-      if (winner.status === "FAILED") {
-        throw new ExpressError(409, "Winner KYC is already marked as failed");
-      }
-
       if (!winner.rankingRun) {
         throw new ExpressError(409, "Winner does not have a ranking run");
       }
 
-      const failedWinner = await transaction.winner.update({
-        where: { id: winnerId },
+      const failureUpdate = await transaction.winner.updateMany({
+        where: {
+          id: winnerId,
+          status: "PENDING_KYC",
+          kycRequestedAt: { not: null },
+        },
         data: { status: "FAILED" },
       });
 
-      const currentWinners = await transaction.winner.findMany({
-        where: { status: { not: "FAILED" } },
+      if (!failureUpdate.count) {
+        throw new ExpressError(409, "Send a KYC request before deciding this winner");
+      }
+
+      const failedWinner = await transaction.winner.findUnique({
+        where: { id: winnerId },
+      });
+
+      const winnersInRun = await transaction.winner.findMany({
+        where: {
+          rankingRunId: winner.rankingRunId,
+        },
+        select: { userId: true },
       });
       const excludedUserIds = new Set([winner.userId]);
 
-      for (const currentWinner of currentWinners) {
-        excludedUserIds.add(currentWinner.userId);
+      // Failed users remain excluded forever in this run.  Without this, a
+      // second failed replacement could re-award the original failed winner.
+      for (const runWinner of winnersInRun) {
+        excludedUserIds.add(runWinner.userId);
       }
 
       const snapshot = winner.rankingRun.snapshot;
@@ -105,8 +154,9 @@ export const markFailed = async (winnerId) => {
       );
 
       if (!replacementCandidate) {
-        console.error("No ranked candidate remains for failed winner", winner.id);
-        throw new ExpressError(409, "No eligible replacement candidate remains");
+        // An exhausted category/ranking has no valid backfill.  The failed
+        // winner remains removed and the prize is deliberately left vacant.
+        return { failedWinner, replacementWinner: null };
       }
 
       const replacementWinner = await transaction.winner.create({
@@ -121,17 +171,23 @@ export const markFailed = async (winnerId) => {
       });
 
       return { failedWinner, replacementWinner };
-    });
+    }, { isolationLevel: "Serializable" });
 
     return {
       success: true,
       status: 200,
       data: result,
-      message: "Winner KYC marked as failed and replacement allocated successfully",
+      message: result.replacementWinner
+        ? "Winner KYC marked as failed and replacement allocated successfully"
+        : "Winner KYC marked as failed; no eligible replacement remains",
     };
   } catch (error) {
     if (error.statusCode) {
       throw error;
+    }
+
+    if (error.code === "P2002" || error.code === "P2034") {
+      throw new ExpressError(409, "Ranking changed concurrently; retry the KYC decision");
     }
 
     throw new ExpressError(500, error.message || "Internal Server Error");

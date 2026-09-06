@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { CONTEST_CATEGORIES } from "../src/config/contest.config.js";
 
 process.env.DATABASE_URL = "postgresql://user:password@localhost:5432/admin";
 
@@ -128,4 +129,34 @@ test("prize allocation never awards the same user twice", () => {
   assert.equal(allocations[0].tier, "GRAND");
   assert.equal(allocations[1].tier, "CONSISTENCY_1");
   assert.equal(allocations[2].tier, "CONSISTENCY_2");
+});
+
+test("a complete field allocates all 33 prizes to distinct people", () => {
+  const globalRanking = Array.from({ length: 11 }, (_, index) =>
+    createCandidate(`global-${index + 1}`, 1_000 - index, "2026-01-01"),
+  );
+  const consistencyRanking = [
+    { userId: "consistency-1", score: 900 },
+    { userId: "consistency-2", score: 800 },
+  ];
+  const categoryRankings = Object.fromEntries(
+    CONTEST_CATEGORIES.map((category) => [
+      category,
+      [
+        createCandidate(`${category}-first`, 100, "2026-01-01"),
+        createCandidate(`${category}-second`, 90, "2026-01-02"),
+      ],
+    ]),
+  );
+
+  const allocations = buildPrizeAllocations(
+    globalRanking,
+    consistencyRanking,
+    categoryRankings,
+  );
+
+  assert.equal(allocations.length, 33);
+  assert.equal(new Set(allocations.map(({ userId }) => userId)).size, 33);
+  assert.equal(allocations.filter(({ tier }) => tier === "CATEGORY_1ST").length, 10);
+  assert.equal(allocations.filter(({ tier }) => tier === "CATEGORY_2ND").length, 10);
 });

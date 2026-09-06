@@ -6,9 +6,10 @@ export const validate =
       stripUnknown: true,
     });
 
-    if (error) {
-      return res.status(400).json({
-        message: error.details[0].message,
+      if (error) {
+        return res.status(400).json({
+          success: false,
+          message: error.details[0].message,
       });
     }
 

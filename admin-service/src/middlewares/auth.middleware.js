@@ -7,13 +7,13 @@ export const auth = async (req, res, next) => {
     const authorization = req.headers.authorization;
 
     if (!authorization) {
-      return res.status(401).json({ message: "Unauthorized" });
+      return res.status(401).json({ success: false, message: "Unauthorized" });
     }
 
     const authorizationParts = authorization.split(" ");
 
     if (authorizationParts.length !== 2 || authorizationParts[0] !== "Bearer") {
-      return res.status(401).json({ message: "Unauthorized" });
+      return res.status(401).json({ success: false, message: "Unauthorized" });
     }
 
     const token = authorizationParts[1];
@@ -24,12 +24,12 @@ export const auth = async (req, res, next) => {
     });
 
     if (!admin) {
-      return res.status(401).json({ message: "Unauthorized" });
+      return res.status(401).json({ success: false, message: "Unauthorized" });
     }
 
     req.adminId = admin.id;
     next();
   } catch (error) {
-    return res.status(401).json({ message: "Unauthorized" });
+    return res.status(401).json({ success: false, message: "Unauthorized" });
   }
 };

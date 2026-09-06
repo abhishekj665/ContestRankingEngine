@@ -29,6 +29,7 @@ model Winner {
   category     String?
   score        Float
   status       WinnerStatus @default(PENDING_KYC)
+  kycRequestedAt DateTime?
   rankingRunId String?
   createdAt    DateTime     @default(now())
   rankingRun   RankingRun?  @relation(fields: [rankingRunId], references: [id])
@@ -36,6 +37,9 @@ model Winner {
   @@index([tier])
   @@index([userId])
   @@index([rankingRunId])
+  @@index([rankingRunId, status])
+  @@index([rankingRunId, tier, category, status])
+  @@unique([rankingRunId, userId])
 }
 
 model RankingRun {

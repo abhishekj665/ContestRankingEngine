@@ -1,6 +1,6 @@
 import ExpressError from "../utils/ExpressError.util.js";
 import prisma from "./prisma.js";
-import { CONTEST_CATEGORIES } from "../../../contest.config.mjs";
+import { CONTEST_CATEGORIES } from "../config/contest.config.js";
 
 export const comparePosts = (firstPost, secondPost) => {
   if (secondPost.score !== firstPost.score) {
@@ -57,6 +57,13 @@ export const buildCategoryRankings = (scoredPosts) => {
   for (const post of scoredPosts) {
     const userId = post.userId;
     const category = post.category;
+
+    // Keep the ranking resilient to legacy/imported data that predates the
+    // category enum enforced by the User Service.
+    if (!CONTEST_CATEGORIES.includes(category)) {
+      continue;
+    }
+
     const userCategoryKey = `${userId}-${category}`;
     const currentBestPost = bestPostsByUserAndCategory[userCategoryKey];
 
@@ -90,6 +97,9 @@ export const buildConsistencyRanking = (weeklyTopThreeData) => {
     const weeks = userWeeklyData.weeks;
     let hasThreePostsInEveryWeek = true;
     let totalScore = 0;
+    let totalComments = 0;
+    let totalViews = 0;
+    let earliestCreatedAt = null;
 
     for (const week of weeks) {
       if (week.postCount < 3) {
@@ -98,6 +108,14 @@ export const buildConsistencyRanking = (weeklyTopThreeData) => {
       }
 
       totalScore += week.weekScore;
+
+      for (const post of week.topThreePosts || []) {
+        totalComments += post.commentCount || 0;
+        totalViews += post.viewCount || 0;
+        if (!earliestCreatedAt || new Date(post.createdAt) < new Date(earliestCreatedAt)) {
+          earliestCreatedAt = post.createdAt;
+        }
+      }
     }
 
     if (weeks.length !== 4) {
@@ -108,13 +126,31 @@ export const buildConsistencyRanking = (weeklyTopThreeData) => {
       consistencyRanking.push({
         userId: userWeeklyData.userId,
         score: totalScore,
+        commentCount: totalComments,
+        viewCount: totalViews,
+        createdAt: earliestCreatedAt,
         weeks,
       });
     }
   }
 
   consistencyRanking.sort((firstUser, secondUser) => {
-    return secondUser.score - firstUser.score;
+    const scoreDifference = secondUser.score - firstUser.score;
+    if (scoreDifference) return scoreDifference;
+
+    const commentDifference = secondUser.commentCount - firstUser.commentCount;
+    if (commentDifference) return commentDifference;
+
+    const viewDifference = secondUser.viewCount - firstUser.viewCount;
+    if (viewDifference) return viewDifference;
+
+    if (firstUser.createdAt && secondUser.createdAt) {
+      return new Date(firstUser.createdAt) - new Date(secondUser.createdAt);
+    }
+
+    // A stable final fallback prevents non-deterministic allocation if test or
+    // legacy data does not include post timestamps.
+    return firstUser.userId.localeCompare(secondUser.userId);
   });
 
   return consistencyRanking;
@@ -133,6 +169,7 @@ export const saveRankingRun = async (snapshot) => {
       message: "Ranking run created successfully",
     };
   } catch (error) {
+    if (error.statusCode) throw error;
     throw new ExpressError(500, error.message || "Internal Server Error");
   }
 };
@@ -154,6 +191,7 @@ export const getLatestRankingRun = async () => {
       message: "Latest ranking run fetched successfully",
     };
   } catch (error) {
+    if (error.statusCode) throw error;
     throw new ExpressError(500, error.message || "Internal Server Error");
   }
 };
@@ -175,6 +213,7 @@ export const getRankingRunById = async (rankingRunId) => {
       message: "Ranking run fetched successfully",
     };
   } catch (error) {
+    if (error.statusCode) throw error;
     throw new ExpressError(500, error.message || "Internal Server Error");
   }
 };
