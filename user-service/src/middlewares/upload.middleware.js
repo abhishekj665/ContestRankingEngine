@@ -30,8 +30,6 @@ const fileFilter = (req, file, callback) => {
 const uploadSinglePostMedia = multer({
   storage,
   fileFilter,
-  // Multer can enforce one stream limit only. Images are checked below after
-  // upload; this remains the hard limit for every uploaded media file.
   limits: { fileSize: MAX_VIDEO_SIZE },
 }).single("media");
 

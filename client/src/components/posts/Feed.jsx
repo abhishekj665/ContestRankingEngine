@@ -15,7 +15,6 @@ export default function Feed() {
 
   useEffect(() => {
     loadPosts();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page]);
 
   async function loadPosts() {

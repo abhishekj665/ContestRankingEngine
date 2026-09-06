@@ -58,8 +58,6 @@ export const buildCategoryRankings = (scoredPosts) => {
     const userId = post.userId;
     const category = post.category;
 
-    // Keep the ranking resilient to legacy/imported data that predates the
-    // category enum enforced by the User Service.
     if (!CONTEST_CATEGORIES.includes(category)) {
       continue;
     }
@@ -148,8 +146,6 @@ export const buildConsistencyRanking = (weeklyTopThreeData) => {
       return new Date(firstUser.createdAt) - new Date(secondUser.createdAt);
     }
 
-    // A stable final fallback prevents non-deterministic allocation if test or
-    // legacy data does not include post timestamps.
     return firstUser.userId.localeCompare(secondUser.userId);
   });
 

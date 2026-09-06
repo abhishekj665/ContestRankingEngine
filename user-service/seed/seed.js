@@ -102,8 +102,6 @@ const seed = async () => {
       "John demo account post for login verification",
     );
 
-    // Multi-category leader: not a global/top winner, so category allocation
-    // must retain Technology (390) and cascade Education (370) to Esha.
     const multiCategoryLeader = await createUser("Mira Multi Category Leader");
     await createPost(
       multiCategoryLeader,
@@ -135,7 +133,6 @@ const seed = async () => {
       "Education replacement after multi-category conflict",
     );
 
-    // Tie score: both score 100, but the first post wins because it has more comments.
     const tieMoreComments = await createUser("Tara Tie More Comments");
     await createPost(
       tieMoreComments,
@@ -157,7 +154,6 @@ const seed = async () => {
       "TIE CASE - score 100 with 2 comments",
     );
 
-    // Ineligible user: score is very high but Maharashtra residency makes this user ineligible.
     const ineligibleUser = await createUser("Outside State Star", "Maharashtra");
     await createPost(
       ineligibleUser,
@@ -169,7 +165,6 @@ const seed = async () => {
       "INELIGIBLE USER - would lead Global without residency filtering",
     );
 
-    // Complete the fixed category set with eligible participants.
     for (const category of ["Sports", "Entertainment", "Fashion"]) {
       for (let position = 1; position <= 2; position += 1) {
         const user = await createUser(`${category} Seed ${position}`);
@@ -185,7 +180,6 @@ const seed = async () => {
       }
     }
 
-    // Exhausted category: Lifestyle has only this one eligible participant.
     const lifestyleOnlyUser = await createUser("Lina Lifestyle Only");
     await createPost(
       lifestyleOnlyUser,
@@ -197,7 +191,6 @@ const seed = async () => {
       "EXHAUSTED CATEGORY - only eligible Lifestyle post",
     );
 
-    // KYC cascade: four low-ranked Travel users leave replacements after first and second place.
     const travelUsers = [
       "Chetan Travel First",
       "Charu Travel Second",
@@ -218,7 +211,6 @@ const seed = async () => {
       );
     }
 
-    // These users fill Global/Top Performer ahead of Travel candidates.
     for (let index = 1; index <= 15; index += 1) {
       const topPerformer = await createUser(`Top Performer Seed ${index}`);
       await createPost(
@@ -246,9 +238,6 @@ const seed = async () => {
       "CONSISTENCY RUNNER",
     );
 
-    // Reserve candidates guarantee that each valid category still has enough
-    // distinct people after Grand, Consistency, and Top Performer winners are
-    // excluded. Lifestyle intentionally remains the sole exhausted category.
     for (const category of CONTEST_CATEGORIES) {
       if (category === "Lifestyle") continue;
 
@@ -266,7 +255,6 @@ const seed = async () => {
       }
     }
 
-    // Near miss: weeks 1-3 have three posts, but week 4 has only two.
     const nearMissConsistency = await createUser("Nina Near Miss Consistency");
     await createConsistencyPosts(
       nearMissConsistency,

@@ -10,7 +10,6 @@ adminApi.interceptors.request.use((config) => {
   try {
     session = JSON.parse(localStorage.getItem("contestSession") || "null");
   } catch {
-    // A corrupt local value must not prevent public requests from working.
   }
   const token = session?.role === "admin" ? session.token : null;
 

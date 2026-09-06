@@ -9,7 +9,6 @@ function readSession() {
     const session = JSON.parse(localStorage.getItem(SESSION_KEY));
     if (session?.token && ["user", "admin"].includes(session.role)) return session;
   } catch {
-    // Treat malformed browser storage as a signed-out session.
   }
   return null;
 }
@@ -19,7 +18,6 @@ export function AuthProvider({ children }) {
 
   function login(newToken, role, email = "") {
     const nextSession = { token: newToken, role, email };
-    // Remove the legacy keys so only the active role's token remains persisted.
     localStorage.removeItem("token");
     localStorage.removeItem("adminToken");
     localStorage.removeItem("email");
