@@ -1,7 +1,6 @@
 # Creator Contest Ranking Engine
 
-React frontend with two independent Express services: User Service (MongoDB) owns creator, post, and engagement data; Admin Service (PostgreSQL with Prisma) creates immutable ranking snapshots, winners, and KYC decisions. The services never share database access.
-
+This app lets creators share posts and take part in a contest. Admins can calculate rankings, manage winners, and complete KYC checks. It has a React frontend and two backend services: User Service and Admin Service.
 
 ## Demo credentials
 
@@ -16,56 +15,64 @@ Set `ADMIN_EMAIL=admin@example.com` and `ADMIN_PASSWORD=Admin123` in `admin-serv
 
 ## Data model
 
-**MongoDB / User Service**
+The User Service stores day-to-day creator activity. The Admin Service stores contest decisions, so past results remain available even when new posts are added.
 
-- `User`: name, unique email/username, bcrypt password, normalized residency, derived `isContestEligible`.
-- `Post`: uploaded media URL/type, caption, one of ten categories, engagement counters, author, timestamps. Indexed by category/date and author/date.
-- `Like`: unique `(userId, postId)` pair.
-- `Comment`: post, user, content, timestamps.
-
-**PostgreSQL / Admin Service**
-
-- `Admin`: unique email and bcrypt password hash.
-- `RankingRun`: timestamped, immutable JSON snapshot of all ranking inputs and allocations.
-- `Winner`: ranking-run user, tier, category, score, KYC status, optional `kycRequestedAt`. A database uniqueness constraint enforces one award per user per ranking run.
+| Service | Data stored |
+| --- | --- |
+| User Service | Creator name, email, username, password, residency, and contest eligibility |
+| User Service | Posts, uploaded media, category, likes, comments, views, author, and date |
+| Admin Service | Admin sign-in details |
+| Admin Service | Each ranking run, saved scores, winners, award type, and KYC status |
 
 ## Ranking rules
 
 The User Service calculates each post score as `likes + (comments * 3) + (views * 0.2)`. Ties use more comments, then more views, then earlier post timestamp.
 
 - Global and category rankings retain each creator's best applicable post.
-- Consistency requires at least three posts in each of the current and three previous Sunday-Saturday weeks. It adds each week’s best three scores; equal totals use aggregate comments, aggregate views, then earliest selected post.
+- Consistency requires at least three posts in each of the current and three previous Sunday-Saturday weeks. It adds each week's best three scores; equal totals use aggregate comments, aggregate views, then earliest selected post.
 - Award order is Grand (1), Consistency 1st (1), Consistency 2nd (1), Top Performer (10), category firsts (10), then category seconds (10). A winner is excluded from every later tier.
 - A multi-category leader retains only their strongest category; other category slots cascade. An exhausted category second place remains vacant.
 
 ## API contract
 
-All responses use `{ success, message, data }`. User and admin JWTs use separate secrets. The browser stores one role-scoped session, so an admin token is never sent to User Service and vice versa.
+All responses use `{ success, message, data }`. User and admin sign-ins use separate secrets, so an admin session is not sent to the User Service.
 
 | Service | Route | Purpose |
 | --- | --- | --- |
-| User | `POST /api/users/register`, `POST /api/users/login` | Creator account and JWT |
-| User | `PATCH /api/users/update/residency` | Set residency / derived eligibility |
-| User | `POST /api/posts` | Authenticated multipart media post |
-| User | `GET /api/posts`, `POST /api/posts/:id/like`, `POST /api/posts/:id/comment` | Feed and engagement |
-| Admin | `POST /admin/auth/login` | Admin JWT |
-| Admin | `POST /api/rankings/run` | Create a ranking snapshot and winners |
-| Admin | `GET /api/rankings/latest`, `GET /api/rankings/:rankingRunId` | Read snapshots |
-| Admin | `GET /api/winners?tier=&rankingRunId=` | Winners; defaults to latest run |
-| Admin | `POST /api/winners/:id/kyc/request` | Record KYC request |
-| Admin | `POST /api/winners/:id/kyc/pass`, `POST /api/winners/:id/kyc/fail` | Finalize KYC and cascade failures |
+| User | `POST /api/users/register`, `POST /api/users/login` | Create a creator account and sign in |
+| User | `PATCH /api/users/update/residency` | Save residency and update contest eligibility |
+| User | `POST /api/posts` | Create a post with an image or video |
+| User | `GET /api/posts`, `POST /api/posts/:id/like`, `POST /api/posts/:id/comment` | View and interact with posts |
+| Admin | `POST /admin/auth/login` | Admin sign in |
+| Admin | `POST /api/rankings/run` | Create and save a ranking result |
+| Admin | `GET /api/rankings/latest`, `GET /api/rankings/:rankingRunId` | Read saved ranking results |
+| Admin | `GET /api/winners?tier=&rankingRunId=` | View winners; defaults to the latest run |
+| Admin | `POST /api/winners/:id/kyc/request` | Start KYC verification |
+| Admin | `POST /api/winners/:id/kyc/pass`, `POST /api/winners/:id/kyc/fail` | Complete KYC verification |
 
-The Admin Service calls User Service's `/internal/scored-posts`, `/internal/eligible-users`, and `/internal/weekly-top-three` endpoints using `x-internal-key`; browsers cannot use these endpoints.
+### Communication between services
 
-## KYC cascade
+The Admin Service asks the User Service for contest information through these private routes:
 
-KYC must be requested before it can be passed or failed. A failed winner is excluded permanently from its ranking run and hidden from active winners. The replacement is chosen only from that run's saved snapshot; every winner in the run, including previously failed users, is excluded. This allows repeated failures without re-awarding anyone or crossing into another run.
+| User Service route | Information returned |
+| --- | --- |
+| `/internal/scored-posts` | Posts and their calculated scores |
+| `/internal/eligible-users` | Creators allowed to participate |
+| `/internal/weekly-top-three` | Weekly post results for consistency rankings |
+
+Each private request must include the shared `x-internal-key`. These routes are for the Admin Service only and are not available to normal browser users. The two services do not directly access each other's databases.
+
+## Assumptions
+
+- A creator must meet the configured residency rule to be included in the contest.
+- One creator can receive only one award in a ranking run.
+- A ranking run is a saved snapshot. New likes, comments, views, or posts do not change a result that already exists.
+- KYC must be requested before it can be passed or failed.
+- If a winner fails KYC, a replacement is selected only from the same saved ranking run. If no suitable creator remains, the award stays vacant.
 
 ## Setup and sample data
 
 Configure `.env` for MongoDB, PostgreSQL, both JWT secrets, `INTERNAL_SERVICE_KEY`, and the two service/client URLs. Then:
-
-
 
 ```powershell
 cd admin-service
