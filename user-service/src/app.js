@@ -9,6 +9,7 @@ import { InternalRoutes } from "./routes/internal.route.js";
 import { globalErrorHandler } from "./middlewares/globalErrorHandler.middleware.js";
 
 import { env } from "./config/env.js";
+import { uploadDirectory } from "./middlewares/upload.middleware.js";
 
 const app = express();
 
@@ -29,6 +30,7 @@ app.use(
 );
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use("/uploads", express.static(uploadDirectory, { maxAge: "7d" }));
 
 app.use("/api/users", UserRoutes);
 app.use("/api/posts", PostRoutes);

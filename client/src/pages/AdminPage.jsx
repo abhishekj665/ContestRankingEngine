@@ -20,7 +20,7 @@ export default function AdminPage() {
       setError(result.message || "Login failed");
       return;
     }
-
+    localStorage.clear();
     localStorage.setItem("adminToken", result.data.token);
     setIsAdminLoggedIn(true);
   }

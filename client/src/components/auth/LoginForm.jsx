@@ -3,7 +3,7 @@ import { toast } from "react-toastify";
 import { login } from "../../api/userService";
 
 export default function LoginForm({ onLoginSuccess }) {
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -11,7 +11,7 @@ export default function LoginForm({ onLoginSuccess }) {
     e.preventDefault();
     setLoading(true);
 
-    const result = await login(email, password);
+    const result = await login(identifier.trim(), password);
 
     setLoading(false);
 
@@ -21,7 +21,7 @@ export default function LoginForm({ onLoginSuccess }) {
     }
 
     toast.success(result.message || "Login successful");
-    onLoginSuccess(result.data.token, email);
+    onLoginSuccess(result.data.token, identifier.trim());
   }
 
   return (
@@ -31,11 +31,12 @@ export default function LoginForm({ onLoginSuccess }) {
     >
       <h2 className="text-lg font-semibold text-slate-800 mb-4">Log in</h2>
 
-      <label className="block text-sm text-slate-600 mb-1">Email</label>
+      <label className="block text-sm text-slate-600 mb-1">Email or username</label>
       <input
-        type="email"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
+        type="text"
+        value={identifier}
+        onChange={(e) => setIdentifier(e.target.value)}
+        placeholder="you@example.com or username"
         required
         className="w-full border border-slate-300 rounded-md px-3 py-2 mb-3 text-sm"
       />

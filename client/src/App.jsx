@@ -13,6 +13,10 @@ import AdminPage from "./pages/AdminPage";
 function NavBar() {
   const { isLoggedIn, email, logoutUser } = useContext(AuthContext);
 
+  if (!isLoggedIn) {
+    return null;
+  }
+
   return (
     <nav className="bg-white border-b border-slate-200 px-6 py-3 flex items-center justify-between">
       <div className="flex gap-4 text-sm text-slate-600">
@@ -30,21 +34,15 @@ function NavBar() {
         </Link>
       </div>
       <div className="text-sm text-slate-600">
-        {isLoggedIn ? (
-          <div className="flex items-center gap-3">
-            <span>{email}</span>
-            <button
-              onClick={logoutUser}
-              className="text-indigo-600 hover:underline"
-            >
-              Log out
-            </button>
-          </div>
-        ) : (
-          <Link to="/login" className="text-indigo-600 hover:underline">
-            Log in
-          </Link>
-        )}
+        <div className="flex items-center gap-3">
+          <span>{email}</span>
+          <button
+            onClick={logoutUser}
+            className="text-indigo-600 hover:underline"
+          >
+            Log out
+          </button>
+        </div>
       </div>
     </nav>
   );
@@ -52,7 +50,7 @@ function NavBar() {
 
 function ProtectedRoute({ children }) {
   const { isLoggedIn } = useContext(AuthContext);
-  return isLoggedIn ? children : <Navigate to="/login" />;
+  return isLoggedIn ? children : <Navigate to="/login" replace />;
 }
 
 function AppRoutes() {
@@ -60,10 +58,17 @@ function AppRoutes() {
     <BrowserRouter>
       <NavBar />
       <Routes>
-        <Route path="/" element={<Navigate to="/feed" />} />
+        <Route path="/" element={<Navigate to="/feed" replace />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
-        <Route path="/feed" element={<FeedPage />} />
+        <Route
+          path="/feed"
+          element={
+            <ProtectedRoute>
+              <FeedPage />
+            </ProtectedRoute>
+          }
+        />
         <Route
           path="/profile"
           element={
@@ -80,7 +85,14 @@ function AppRoutes() {
             </ProtectedRoute>
           }
         />
-        <Route path="/admin" element={<AdminPage />} />
+        <Route
+          path="/admin"
+          element={
+            <ProtectedRoute>
+              <AdminPage />
+            </ProtectedRoute>
+          }
+        />
       </Routes>
     </BrowserRouter>
   );

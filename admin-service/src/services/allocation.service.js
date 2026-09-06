@@ -1,19 +1,7 @@
 import { comparePosts } from "./ranking.service.js";
 import prisma from "./prisma.js";
 import ExpressError from "../utils/ExpressError.util.js";
-
-const categories = [
-  "Technology",
-  "Education",
-  "Sports",
-  "Entertainment",
-  "Travel",
-  "Food",
-  "Fashion",
-  "Fitness",
-  "Business",
-  "Lifestyle",
-];
+import { CONTEST_CATEGORIES } from "../../../contest.config.mjs";
 
 const getCandidateScore = (candidate) => {
   if (candidate.bestPost) {
@@ -52,7 +40,7 @@ export const resolveCategoryWinners = (categoryRankings, wonSet) => {
   const lockedUserIds = new Set();
   let hasConflict = true;
 
-  for (const category of categories) {
+  for (const category of CONTEST_CATEGORIES) {
     const ranking = categoryRankings[category] || [];
     const candidate = firstEligible(ranking, wonSet);
 
@@ -64,7 +52,7 @@ export const resolveCategoryWinners = (categoryRankings, wonSet) => {
 
     const categoriesByUser = {};
 
-    for (const category of categories) {
+    for (const category of CONTEST_CATEGORIES) {
       const candidate = currentCandidates[category];
 
       if (!candidate) {
@@ -177,7 +165,7 @@ export const buildPrizeAllocations = (
 
   const categoryFirstCandidates = resolveCategoryWinners(categoryRankings, wonSet);
 
-  for (const category of categories) {
+  for (const category of CONTEST_CATEGORIES) {
     const candidate = categoryFirstCandidates[category];
 
     if (!candidate) {
@@ -190,7 +178,7 @@ export const buildPrizeAllocations = (
 
   const categorySecondCandidates = resolveCategoryWinners(categoryRankings, wonSet);
 
-  for (const category of categories) {
+  for (const category of CONTEST_CATEGORIES) {
     const candidate = categorySecondCandidates[category];
 
     if (!candidate) {
